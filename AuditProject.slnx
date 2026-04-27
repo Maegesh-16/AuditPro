@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="ActionService.API/ActionService.API.csproj" />
+  <Project Path="ApprovalService.API/ApprovalService.API.csproj" />
+</Solution>
