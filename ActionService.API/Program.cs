@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using ActionService.API.Data;
+using ActionService.API.HttpClients;
 using ActionService.API.Repositories;
 using ActionService.API.Services;
 
@@ -25,6 +26,12 @@ builder.Services.AddDbContext<ActionDbContext>(options =>
 // Dependency Injection
 builder.Services.AddScoped<ICorrectiveActionRepository, CorrectiveActionRepository>();
 builder.Services.AddScoped<ICorrectiveActionService, CorrectiveActionService>();
+
+// HTTP Clients
+builder.Services.AddHttpClient<IApprovalServiceClient, ApprovalServiceClient>(client =>
+{
+    client.BaseAddress = new Uri(builder.Configuration["ServiceUrls:ApprovalService"]!);
+});
 
 var app = builder.Build();
 

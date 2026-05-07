@@ -1,5 +1,6 @@
 using ActionService.API.DTOs;
 using ActionService.API.Enums;
+using ActionService.API.HttpClients;
 using ActionService.API.Models;
 using ActionService.API.Repositories;
 
@@ -9,21 +10,23 @@ namespace ActionService.API.Services
     {
         private readonly ICorrectiveActionRepository _repository;
         private readonly ILogger<CorrectiveActionService> _logger;
+        private readonly IApprovalServiceClient _approvalServiceClient;
 
         // =======================================================================
         // TODO: Inject HttpClient or service clients for cross-service calls:
         //   - ObservationService: to validate ObservationId exists
         //   - UserService: to validate AssignedToUserId exists
-        //   - ApprovalService: to create approval request on closure
         //   - NotificationService: to notify assigned user
         // =======================================================================
 
         public CorrectiveActionService(
             ICorrectiveActionRepository repository,
-            ILogger<CorrectiveActionService> logger)
+            ILogger<CorrectiveActionService> logger,
+            IApprovalServiceClient approvalServiceClient)
         {
             _repository = repository;
             _logger = logger;
+            _approvalServiceClient = approvalServiceClient;
         }
 
         public async Task<IEnumerable<CorrectiveActionResponseDto>> GetAllActionsAsync()
@@ -155,17 +158,13 @@ namespace ActionService.API.Services
             action.Status = ActionStatus.ClosureRequested;
             await _repository.UpdateAsync(action);
 
-            // =======================================================================
-            // DUMMY: Create approval request via ApprovalService API
-            // await _approvalServiceClient.CreateApprovalRequestAsync(new {
-            //     EntityType = "Action",
-            //     EntityId = actionId,
-            //     ApprovalType = "ActionClosure",
-            //     RequestedByUserId = action.AssignedToUserId
-            // });
-            _logger.LogWarning("[DUMMY] Skipping ApprovalService call for closure request of ActionId: {ActionId}. " +
-                "Replace with actual ApprovalService API call.", actionId);
-            // =======================================================================
+            await _approvalServiceClient.CreateApprovalRequestAsync(new CreateApprovalRequestPayload
+            {
+                EntityType = 2,  // Action
+                EntityId = actionId,
+                ApprovalType = 2, // CorrectiveActionClosure
+                RequestedByUserId = action.AssignedToUserId
+            });
 
             // =======================================================================
             // DUMMY: Notify approver via NotificationService API

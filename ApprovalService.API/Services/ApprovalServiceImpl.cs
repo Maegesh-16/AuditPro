@@ -1,5 +1,6 @@
 using ApprovalService.API.DTOs;
 using ApprovalService.API.Enums;
+using ApprovalService.API.HttpClients;
 using ApprovalService.API.Models;
 using ApprovalService.API.Repositories;
 
@@ -9,22 +10,24 @@ namespace ApprovalService.API.Services
     {
         private readonly IApprovalRepository _repository;
         private readonly ILogger<ApprovalServiceImpl> _logger;
+        private readonly IActionServiceClient _actionServiceClient;
 
         // =======================================================================
         // TODO: Inject HttpClient or service clients for cross-service calls:
         //   - AuditService: to update audit status on approval/rejection
         //   - ObservationService: to update observation status on approval/rejection
-        //   - ActionService: to update action status on closure approval/rejection
         //   - UserService: to validate RequestedByUserId and ActionByUserId
         //   - NotificationService: to notify requester of approval result
         // =======================================================================
 
         public ApprovalServiceImpl(
             IApprovalRepository repository,
-            ILogger<ApprovalServiceImpl> logger)
+            ILogger<ApprovalServiceImpl> logger,
+            IActionServiceClient actionServiceClient)
         {
             _repository = repository;
             _logger = logger;
+            _actionServiceClient = actionServiceClient;
         }
 
         public async Task<IEnumerable<ApprovalRequestResponseDto>> GetAllApprovalsAsync()
@@ -137,30 +140,16 @@ namespace ApprovalService.API.Services
             };
             await _repository.AddHistoryAsync(history);
 
-            // =======================================================================
-            // DUMMY: Callback to originating service based on EntityType and ApprovalType
-            // This is where the approval result triggers status changes in other services:
-            //
-            // AuditCreation approval:
-            //   Approved -> AuditService: Audit status Draft -> Scheduled
-            //   Rejected -> AuditService: Audit stays Draft (with comments)
-            //
-            // AuditFindings approval:
-            //   Approved -> AuditService: Audit status -> FindingsApproved
-            //   Rejected -> ObservationService: Observations sent back to Auditor
-            //
-            // CorrectiveActionClosure approval:
-            //   Approved -> ActionService: Action status -> Closed
-            //   Rejected -> ActionService: Action status -> Reopened
-            //
-            // FinalAuditClosure approval:
-            //   Approved -> AuditService: Audit status -> Completed (locked)
-            //   Rejected -> AuditService: Audit remains open
-            //
-            _logger.LogWarning("[DUMMY] Skipping callback to {EntityType} service for ApprovalId: {ApprovalId}, " +
-                "Result: {Result}. Replace with actual service API call.",
-                approval.EntityType, approvalId, dto.Action);
-            // =======================================================================
+            // Callback to ActionService for CorrectiveActionClosure approvals
+            if (approval.ApprovalType == ApprovalType.CorrectiveActionClosure)
+            {
+                // Approved -> Closed (3), Rejected -> Reopened (4)
+                var newStatus = dto.Action == ApprovalAction.Approved ? 3 : 4;
+                await _actionServiceClient.UpdateActionStatusAsync(approval.EntityId, new UpdateActionStatusPayload
+                {
+                    Status = newStatus
+                });
+            }
 
             // =======================================================================
             // DUMMY: Notify requester of approval result via NotificationService API
