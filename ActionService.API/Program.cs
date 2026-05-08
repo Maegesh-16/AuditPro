@@ -33,8 +33,6 @@ builder.Services.AddHttpClient<IApprovalServiceClient, ApprovalServiceClient>(cl
     client.BaseAddress = new Uri(builder.Configuration["ServiceUrls:ApprovalService"]!);
 });
 
-builder.WebHost.UseUrls($"http://0.0.0.0:{Environment.GetEnvironmentVariable("PORT") ?? "8080"}");
-
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

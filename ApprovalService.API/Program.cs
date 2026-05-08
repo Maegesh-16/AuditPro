@@ -33,8 +33,6 @@ builder.Services.AddHttpClient<IActionServiceClient, ActionServiceClient>(client
     client.BaseAddress = new Uri(builder.Configuration["ServiceUrls:ActionService"]!);
 });
 
-builder.WebHost.UseUrls($"http://0.0.0.0:{Environment.GetEnvironmentVariable("PORT") ?? "8080"}");
-
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
