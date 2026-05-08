@@ -33,8 +33,7 @@ builder.Services.AddHttpClient<IApprovalServiceClient, ApprovalServiceClient>(cl
     client.BaseAddress = new Uri(builder.Configuration["ServiceUrls:ApprovalService"]!);
 });
 
-var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
-builder.WebHost.ConfigureKestrel(options => options.ListenAnyIP(int.Parse(port)));
+builder.WebHost.UseUrls($"http://0.0.0.0:{Environment.GetEnvironmentVariable("PORT") ?? "8080"}");
 
 var app = builder.Build();
 
