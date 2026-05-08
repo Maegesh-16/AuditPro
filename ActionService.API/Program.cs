@@ -33,6 +33,9 @@ builder.Services.AddHttpClient<IApprovalServiceClient, ApprovalServiceClient>(cl
     client.BaseAddress = new Uri(builder.Configuration["ServiceUrls:ApprovalService"]!);
 });
 
+var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
+builder.WebHost.ConfigureKestrel(options => options.ListenAnyIP(int.Parse(port)));
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -41,8 +44,6 @@ var app = builder.Build();
     app.UseSwagger();
     app.UseSwaggerUI();
 // }
-
-app.UseHttpsRedirection();
 
 app.UseAuthorization();
 

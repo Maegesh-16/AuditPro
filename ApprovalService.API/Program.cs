@@ -33,16 +33,14 @@ builder.Services.AddHttpClient<IActionServiceClient, ActionServiceClient>(client
     client.BaseAddress = new Uri(builder.Configuration["ServiceUrls:ActionService"]!);
 });
 
+var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
+builder.WebHost.ConfigureKestrel(options => options.ListenAnyIP(int.Parse(port)));
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
-
-app.UseHttpsRedirection();
+app.UseSwagger();
+app.UseSwaggerUI();
 
 app.UseAuthorization();
 
